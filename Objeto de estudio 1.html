@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guía Interactiva: Objeto de Estudio 1 | Medicina</title>
+    <style>
+        :root {
+            --nav-blue: #1a365d;
+            --med-blue: #2b6cb0;
+            --bg-light: #f8fafc;
+            --sidebar-width: 280px;
+            --accent-green: #48bb78;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg-light); display: flex; color: #2d3748; overflow-x: hidden; }
+
+        .sidebar {
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: var(--nav-blue);
+            color: white;
+            position: fixed;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 4px 0 10px rgba(0,0,0,0.1);
+            z-index: 100;
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar.hidden {
+            transform: translateX(-100%);
+        }
+
+        .sidebar-header { padding: 30px 20px; border-bottom: 1px solid rgba(255,255,255,0.1); text-align: center; }
+        .tracker { padding: 20px; background: rgba(0,0,0,0.2); margin: 15px; border-radius: 12px; }
+        .progress-bar-bg { background: rgba(255,255,255,0.1); height: 10px; border-radius: 5px; margin: 10px 0; overflow: hidden; }
+        .progress-bar-fill { background: var(--accent-green); width: 0%; height: 100%; transition: 0.5s ease; }
+        
+        .nav-items { flex-grow: 1; overflow-y: auto; padding: 10px 0; }
+        .nav-item { padding: 12px 25px; cursor: pointer; transition: 0.2s; font-size: 0.9em; border-left: 4px solid transparent; opacity: 0.8; }
+        .nav-item:hover { background: rgba(255,255,255,0.1); opacity: 1; }
+        .nav-item.active { background: var(--med-blue); border-left-color: white; font-weight: 600; opacity: 1; }
+
+        .toggle-sidebar {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 200;
+            background: var(--nav-blue);
+            color: white;
+            border: none;
+            padding: 12px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2em;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+
+        .toggle-sidebar:hover {
+            background: var(--med-blue);
+            transform: scale(1.05);
+        }
+
+        .toggle-sidebar.shifted {
+            left: calc(var(--sidebar-width) + 20px);
+        }
+
+        .main-content { 
+            margin-left: var(--sidebar-width); 
+            flex-grow: 1; 
+            padding: 40px; 
+            max-width: calc(100% - var(--sidebar-width));
+            transition: margin-left 0.3s ease, max-width 0.3s ease;
+        }
+
+        .main-content.expanded {
+            margin-left: 0;
+            max-width: 100%;
+        }
+
+        .content-section { display: none; max-width: 1000px; margin: 0 auto; }
+        .content-section.active { display: block; animation: fadeIn 0.4s; }
+
+        .sub-block {
+            background: white;
+            border-radius: 15px;
+            padding: 35px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+        }
+        .sub-block h2 { color: var(--nav-blue); border-bottom: 2px solid #edf2f7; padding-bottom: 10px; margin-bottom: 20px; font-size: 1.5em; text-transform: uppercase; }
+        .sub-block h3 { color: var(--med-blue); margin: 25px 0 15px; font-size: 1.2em; border-left: 4px solid var(--med-blue); padding-left: 10px; }
+        
+        .table-scroll { overflow-x: auto; margin: 25px 0; border-radius: 10px; border: 1px solid #e2e8f0; }
+        table { width: 100%; border-collapse: collapse; min-width: 800px; }
+        th { background: #f1f5f9; padding: 15px; font-size: 0.85em; border: 1px solid #e2e8f0; color: var(--nav-blue); }
+        td { padding: 12px; border: 1px solid #e2e8f0; text-align: center; font-size: 0.9em; }
+        td:first-child { font-weight: bold; background: #f8fafc; text-align: left; width: 180px; }
+        td[contenteditable="true"]:focus { background: #fffcf0; outline: 2px solid var(--med-blue); }
+
+        .question-wrapper { margin-bottom: 25px; }
+        .question-label { font-weight: 600; display: block; margin-bottom: 10px; color: #1a202c; line-height: 1.6; }
+        .answer-box { 
+            min-height: 90px; padding: 18px; border: 2px solid #e2e8f0; border-radius: 12px; background: #fff;
+            transition: all 0.2s ease; cursor: text;
+        }
+        .answer-box:focus { border-color: var(--med-blue); outline: none; box-shadow: 0 0 0 4px rgba(66,153,225,0.1); }
+        .answer-box:empty::before { content: "Escriba su respuesta aquí..."; color: #a0aec0; font-style: italic; }
+
+        .context-box {
+            background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+            border-left: 5px solid var(--med-blue);
+            padding: 25px;
+            border-radius: 10px;
+            margin: 25px 0;
+            line-height: 1.8;
+        }
+
+        .highlight-box {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            line-height: 1.8;
+        }
+
+        .reaction-box {
+            background: #f1f5f9;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 1.1em;
+            border: 2px solid var(--med-blue);
+        }
+
+        .btn-controls { position: fixed; bottom: 30px; right: 30px; display: flex; flex-direction: column; gap: 12px; z-index: 200; }
+        button.btn-save, button.btn-reset { padding: 14px 25px; border: none; border-radius: 50px; cursor: pointer; color: white; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.15); transition: 0.3s; }
+        .btn-save { background: var(--med-blue); }
+        .btn-save:hover { background: #2c5282; transform: translateY(-2px); }
+        .btn-reset { background: #f56565; }
+        .btn-reset:hover { background: #e53e3e; transform: translateY(-2px); }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .sup { vertical-align: super; font-size: 0.75em; }
+        .sub { vertical-align: sub; font-size: 0.75em; }
+
+        @media (max-width: 768px) {
+            .sidebar { width: 100%; height: auto; position: relative; }
+            .sidebar.hidden { transform: translateY(-100%); }
+            .main-content { margin-left: 0; padding: 20px; max-width: 100%; }
+            .main-content.expanded { margin-left: 0; }
+            .toggle-sidebar { top: 10px; left: 10px; }
+            .toggle-sidebar.shifted { left: 10px; }
+            .btn-controls { bottom: 20px; right: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<button class="toggle-sidebar shifted" id="toggleBtn" onclick="toggleSidebar()">☰</button>
+
+<nav class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <h2 style="font-size: 1.1em;">OBJETO 1: MATERIA</h2>
+        <p style="font-size: 0.8em; opacity: 0.7;">Medicina - Interactiva</p>
+    </div>
+    
+    <div class="tracker">
+        <span style="font-size: 0.8em; font-weight: bold;">AVANCE DE LA GUÍA</span>
+        <div class="progress-bar-bg"><div id="progress-fill" class="progress-bar-fill"></div></div>
+        <div style="font-size: 0.8em; text-align: right;"><span id="count">0</span> / 78 Actividades</div>
+    </div>
+
+    <div class="nav-items">
+        <div class="nav-item active" data-target="sec-intro">🏠 Inicio y Objetivos</div>
+        <div class="nav-item" data-target="sec-pre">💡 1.1 Preliminares</div>
+        <div class="nav-item" data-target="sec-des1">🔬 1.2.1 Estructura Atómica</div>
+        <div class="nav-item" data-target="sec-des2">📅 1.2.2 Tabla Periódica</div>
+        <div class="nav-item" data-target="sec-des3">💧 1.2.3 Estados de Agregación</div>
+        <div class="nav-item" data-target="sec-des4">🔗 1.2.4 Enlaces Químicos</div>
+        <div class="nav-item" data-target="sec-des5">⚖️ 1.2.5 Unidades del SI</div>
+        <div class="nav-item" data-target="sec-api">🧪 1.3 Aplicación Práctica</div>
+        <div class="nav-item" data-target="sec-evi">🏆 1.4 Evidencia Final</div>
+    </div>
+</nav>
+
+<main class="main-content" id="mainContent">
+    <div class="btn-controls">
+        <button class="btn-save" onclick="save()">💾 Guardar Progreso</button>
+        <button class="btn-reset" onclick="reset()">🔄 Reiniciar Todo</button>
+    </div>
+
+    <div id="sec-intro" class="content-section active">
+        <div class="sub-block" style="background: linear-gradient(135deg, var(--nav-blue), var(--med-blue)); color: white; text-align: center;">
+            <h1 style="font-size: 2.2em; margin-bottom: 10px;">OBJETO DE ESTUDIO 1</h1>
+            <p style="font-size: 1.2em;">Estructura de la Materia</p>
+        </div>
+        <div class="sub-block">
+            <h2>Resultados de Aprendizaje</h2>
+            <p style="font-size: 1.1em; margin-bottom: 20px;"><strong>Analiza a partir de sus propiedades fisicoquímicas la clasificación estructural de la materia.</strong></p>
+            <h3>Objetivos de la Unidad</h3>
+            <ul style="margin-left: 20px; line-height: 2;">
+                <li><strong>1.1.1</strong> Entender el concepto de átomo y la naturaleza de un elemento.</li>
+                <li><strong>1.1.2</strong> Resumir los diferentes tipos de radiación que las sustancias radioactivas pueden producir.</li>
+                <li><strong>1.2.1</strong> Reconocer la organización general de la tabla periódica con respecto a los metales, metaloides, no metales, grupos y periodos.</li>
+                <li><strong>1.3.1</strong> Clasificar la materia como sustancias o mezclas.</li>
+                <li><strong>1.3.2</strong> Diferenciar entre mezclas homogéneas y heterogéneas.</li>
+                <li><strong>1.3.3</strong> Categorizar las sustancias como elementos o compuestos.</li>
+                <li><strong>1.4.1</strong> Comprender el enlace iónico y dar ejemplos de compuestos con dicho enlace.</li>
+                <li><strong>1.4.2</strong> Comprender el enlace covalente y cómo este se relaciona con la teoría de Lewis.</li>
+                <li><strong>1.4.3</strong> Definir el concepto de electronegatividad y evaluar su rol en la predicción de la polaridad de enlace.</li>
+                <li><strong>1.4.4</strong> Evaluar los conceptos de resonancia y entalpía y cómo estos influyen en el comportamiento de los compuestos.</li>
+                <li><strong>1.5.1</strong> Conocer las unidades del SI para masa, volumen y densidad, así como para otras propiedades físicas y químicas.</li>
+                <li><strong>1.5.2</strong> Llevar a cabo conversiones entre diferentes unidades de medida.</li>
+            </ul>
+        </div>
+    </div>
+
+    <div id="sec-pre" class="content-section">
+        <div class="sub-block">
+            <h2>💡 1.1 ACTIVIDADES PRELIMINARES</h2>
+            <p style="font-style: italic; color: #718096; margin-bottom: 30px;">Las actividades preliminares tienen como finalidad llevarlo a la reflexión sobre el objeto de estudio a abordar. Toma como punto de partida el reconocer lo que se sabe y lo que se ignora sobre el tema, <strong>sin la necesidad de consultar referencias bibliográficas.</strong></p>
+            <div id="q-pre"></div>
+        </div>
+    </div>
+
+    <div id="sec-des1" class="content-section">
+        <div class="sub-block">
+            <h2>🔬 1.2.1 Estructura atómica</h2>
+            <div class="context-box">
+                <p><strong>Un átomo consiste de un núcleo central que contiene protones y neutrones, con los electrones moviéndose alrededor de este.</strong> Los protones están cargados positivamente, los neutrones no tienen carga y los electrones tienen carga negativa. Los protones y neutrones tienen virtualmente la misma masa, que es aproximadamente 1840 veces mayor que la del electrón.</p>
+            </div>
+            <p style="margin: 20px 0; padding: 15px; background: #fef3c7; border-radius: 8px;">
+                👉🏻 <strong>Para el desarrollo de estas actividades se recomienda leer el Capítulo 2.2 "Estructura del átomo" del libro Química de Raymond Chang.</strong> 👈🏻
+            </p>
+            <div id="q-des1-a"></div>
+            <h3>Comparativa de Partículas</h3>
+            <div class="table-scroll">
+                <table>
+                    <thead><tr><th>Propiedad</th><th>Partículas α</th><th>Rayos Catódicos</th><th>Protones</th><th>Neutrones</th><th>Electrones</th></tr></thead>
+                    <tbody id="table-atom"></tbody>
+                </table>
+            </div>
+            <div id="q-des1-b"></div>
+        </div>
+    </div>
+
+    <div id="sec-des2" class="content-section">
+        <div class="sub-block">
+            <h2>📅 1.2.2 Clasificación Periódica</h2>
+            <div class="context-box">
+                <p>Los elementos están agrupados en una manera sistemática de acuerdo a sus propiedades físicas y químicas en la tabla periódica. Las <strong>filas horizontales</strong> son conocidas como <strong>"periodos"</strong> mientras que las <strong>columnas</strong> son conocidas como <strong>"grupos"</strong> o <strong>"familias"</strong>. El sistema de numeración de la IUPAC establece las columnas de la 1 al 18.</p>
+                <p style="margin-top: 15px;">Muchos grupos de la tabla periódica son conocidos por sus nombres históricos: <strong>Grupo 1</strong> (Metales alcalinos), <strong>Grupo 2</strong> (Metales alcalino-térreos), <strong>Grupo 17</strong> (halógenos) y el <strong>Grupo 18</strong> (Gases nobles).</p>
+            </div>
+            <p style="margin: 20px 0; padding: 15px; background: #fef3c7; border-radius: 8px;">
+                👉🏻 <strong>Para el desarrollo de estas actividades se recomienda leer el Capítulo 2.4 "La tabla periódica" del libro Química de Raymond Chang.</strong> 👈🏻
+            </p>
+            <div id="q-des2"></div>
+        </div>
+    </div>
+
+    <div id="sec-des3" class="content-section">
+        <div class="sub-block">
+            <h2>💧 1.2.3 Estados de agregación</h2>
+            <div class="context-box">
+                <p>La <strong>química</strong> es el estudio de la materia y sus cambios, mientras que la <strong>física</strong> es el estudio de la energía y sus cambios. Las sustancias que conforman a la materia tienen <strong>propiedades físicas</strong> únicas que pueden ser observadas sin cambiar su identidad y <strong>propiedades químicas</strong> también únicas, que, cuando son demostradas ocasionan un cambio en la identidad de estas.</p>
+                <p style="margin-top: 15px;">Las <strong>mezclas</strong>, ya sean homo- u heterogéneas pueden ser separadas en sus componentes puros por medios físicos. Las sustancias más simples en la química son los <strong>elementos</strong>. Los <strong>compuestos</strong> están formados por la combinación química de átomos de diferentes elementos en proporciones fijas.</p>
+            </div>
+            <div id="q-des3"></div>
+        </div>
+    </div>
+
+    <div id="sec-des4" class="content-section">
+        <div class="sub-block">
+            <h2>🔗 1.2.4 Enlaces Químicos</h2>
+            <h3>1.2.4.1 Enlace Iónico</h3>
+            <div id="q-des4-i"></div>
+            <h3>1.2.4.2 Enlace Covalente</h3>
+            <div id="q-des4-c"></div>
+            <h3>1.2.4.3 Electronegatividad y Resonancia</h3>
+            <div id="q-des4-r"></div>
+        </div>
+    </div>
+
+    <div id="sec-des5" class="content-section">
+        <div class="sub-block">
+            <h2>⚖️ 1.2.5 Unidades del Sistema Internacional de Unidades (SI)</h2>
+            <div class="context-box">
+                <p>El <strong>Sistema Internacional de Unidades (SI)</strong> establece las unidades que expresan cantidades físicas en todas las ciencias, incluyendo la física y la química.</p>
+            </div>
+            <div id="q-des5"></div>
+        </div>
+    </div>
+
+    <div id="sec-api" class="content-section">
+        <div class="sub-block"><h3>🧪 1.3.1 Aplicación Atómica</h3><div id="q-api-1"></div></div>
+        <div class="sub-block"><h3>🧪 1.3.2 Aplicación Periódica</h3><div id="q-api-2"></div></div>
+        <div class="sub-block"><h3>🧪 1.3.3 Aplicación Materia</h3><div id="q-api-3"></div></div>
+        <div class="sub-block"><h3>🧪 1.3.4 Aplicación Enlaces</h3><div id="q-api-4"></div></div>
+        <div class="sub-block"><h3>🧪 1.3.5 Aplicación Unidades</h3><div id="q-api-5"></div></div>
+    </div>
+
+    <div id="sec-evi" class="content-section">
+        <div class="sub-block">
+            <h2>🏆 1.4 EVIDENCIA FINAL</h2>
+            <h3 style="text-align: center; color: var(--nav-blue); font-size: 1.8em; margin: 30px 0;">El Óxido Nítrico: El Mensajero Interno del Rendimiento</h3>
+            
+            <div class="context-box">
+                <p>El <strong>óxido nítrico (NO•)</strong> es una de las moléculas de señalización más importantes del cuerpo humano. A diferencia de las hormonas o los neurotransmisores clásicos, es un <strong>gas simple y altamente reactivo</strong>, conocido como gasotransmisor. El cuerpo lo produce de forma natural a partir del aminoácido L-arginina, mediante un grupo de enzimas llamadas óxido nítrico sintasas (NOS). Esta producción es fundamental para la homeostasis vascular y el rendimiento físico.</p>
+            </div>
+
+            <h3>Producción de Óxido Nítrico durante el Ejercicio</h3>
+            <p style="line-height: 1.8;">El principal estímulo para la producción de NO en el contexto deportivo es el <strong>propio ejercicio</strong>. El aumento del flujo sanguíneo durante la actividad física genera una fuerza de cizallamiento sobre las paredes internas de los vasos sanguíneos (el endotelio). Esta tensión mecánica activa la enzima <strong>eNOS (óxido nítrico sintasa endotelial)</strong> para que produzca NO:</p>
+            
+            <div class="reaction-box">
+                <p>L-arginina + O<span class="sub">2</span> → L-citrulina + NO•</p>
+            </div>
+
+            <p style="line-height: 1.8; margin-top: 20px;">Este NO recién formado actúa de inmediato sobre las células musculares lisas que rodean los vasos sanguíneos, provocando su <strong>relajación</strong> y, por tanto, su <strong>dilatación (vasodilatación)</strong>.</p>
+
+            <h3>Impacto en el Rendimiento Deportivo</h3>
+            <p style="line-height: 1.8;">Esta vasodilatación es el mecanismo central por el cual el NO impacta el rendimiento deportivo. Unos vasos sanguíneos más anchos permiten un <strong>mayor flujo de sangre</strong> hacia los músculos que trabajan. Esto se traduce en un suministro optimizado de oxígeno y nutrientes esenciales (como la glucosa y los aminoácidos) y, a su vez, en una eliminación más eficiente de los subproductos metabólicos que causan fatiga, como el lactato y el amoníaco.</p>
+
+            <p style="line-height: 1.8;">Hace más de dos décadas, la comunidad científica deportiva comenzó a explorar cómo manipular esta vía para obtener una ventaja ergogénica. Se descubrió que el NO no solo mejora el transporte de oxígeno, sino que también <strong>optimiza la función mitocondrial</strong> (las centrales energéticas de la célula) y mejora la eficiencia de la contracción muscular. Desde entonces, se ha investigado su papel en la reducción de la fatiga, el aumento de la resistencia y la aceleración de la recuperación post-ejercicio.</p>
+
+            <h3>Suplementación y el "Pump"</h3>
+            <p style="line-height: 1.8;">El descubrimiento de esta vía biológica ha impulsado el desarrollo de suplementos deportivos diseñados para aumentar la producción de NO. Durante años, la <strong>L-arginina</strong> fue el precursor de elección. Sin embargo, la investigación moderna ha demostrado que la suplementación con <strong>L-citrulina</strong> es más eficaz para aumentar los niveles de L-arginina en plasma y, por ende, la síntesis de NO. La L-citrulina se convierte en L-arginina en los riñones, evitando su degradación en el hígado y garantizando una mayor disponibilidad para la producción de NO. Este efecto es lo que los atletas comúnmente denominan <strong>"el pump"</strong> o congestión muscular.</p>
+
+            <h3>Interacción con la Hemoglobina: Modificación Covalente</h3>
+            <div class="highlight-box">
+                <p><strong>Es importante destacar que, bajo ciertas condiciones fisiológicas, el óxido nítrico (NO•) se une al residuo de Cisteína 93 de la cadena beta (Cys 93β) en la hemoglobina</strong>, la proteína encargada del transporte de oxígeno en la sangre, influyendo en su interacción con el O<span class="sub">2</span>. Esta reacción produce <strong>S-nitrosocisteína (SNO)</strong>.</p>
+            </div>
+
+            <div class="reaction-box">
+                <p>Hb-Cys-SH + NO• → Hb-Cys-S-NO</p>
+                <p style="font-size: 0.9em; margin-top: 10px;">(Formación de S-nitrosocisteína)</p>
+            </div>
+
+            <p style="line-height: 1.8; margin-top: 20px;">Esta interacción, ¿es un ejemplo de regulación alostérica o modificación covalente? La respuesta es clara: <strong>es una modificación covalente</strong>, ya que se forma un nuevo enlace químico S-N entre el azufre de la cisteína y el nitrógeno del NO.</p>
+
+            <h3>Conclusión</h3>
+            <p style="line-height: 1.8;">Que el NO se haya convertido en un pilar de la fisiología del ejercicio es totalmente lógico. Es una molécula pequeña, de acción rápida y local, que se difunde fácilmente para satisfacer las demandas inmediatas del músculo en acción. Su capacidad para regular el flujo sanguíneo, la respiración celular y la contracción muscular lo convierte en un mediador clave del rendimiento y la adaptación al entrenamiento. Por su papel crucial en la optimización de las funciones fisiológicas durante el esfuerzo, <strong>el óxido nítrico es, sin duda, la molécula del atleta</strong>.</p>
+
+            <hr style="margin: 40px 0; border: none; border-top: 2px solid #e2e8f0;">
+            
+            <h3 style="color: var(--med-blue); margin-top: 40px;">📋 Instrucciones de Análisis</h3>
+            <div id="q-evi"></div>
+
+            <div style="background: #f1f5f9; padding: 20px; border-radius: 10px; margin-top: 40px;">
+                <h3 style="color: var(--nav-blue);">📚 Referencias para Profundización</h3>
+                <p style="margin: 10px 0; line-height: 1.6;"><strong>1.</strong> Gonzalez, A. M., & Trexler, E. T. (2020). Effects of Citrulline Supplementation on Exercise Performance in Humans: A Review of the Current Literature. <em>The Journal of Strength & Conditioning Research, 34</em>(5).</p>
+                <p style="margin: 10px 0; line-height: 1.6;"><strong>2.</strong> Bescós, R., Sureda, A., Tur, J. A., & Pons, A. (2012). The effect of nitric-oxide-related supplements on human performance. <em>Sports Medicine, 42</em>(2).</p>
+                <p style="margin: 10px 0; line-height: 1.6;"><strong>3.</strong> Stamler, J. S., & Meissner, G. (2001). Physiology of nitric oxide in skeletal muscle. <em>Physiological reviews, 81</em>(1).</p>
+                <p style="margin: 10px 0; line-height: 1.6;"><strong>4.</strong> Agarwal, U., Didelija, I. C., Yuan, Y., Wang, X., & Marini, J. C. (2017). Supplemental citrulline is more efficient than arginine in increasing systemic arginine availability in mice. <em>The Journal of nutrition, 147</em>(8).</p>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script>
+    const content = {
+        pre: [
+            "1. ¿Qué entiende usted por el concepto de átomo y cómo se relaciona esto con los elementos?",
+            "2. ¿Cuántos tipos de radiación existen? ¿De dónde provienen?",
+            "3. Mencione a grandes rasgos cómo se organiza la tabla periódica de los elementos químicos, y mencione que es un grupo, familia, periodo y los diferentes números encontrados.",
+            "4. ¿Cuál es la diferencia entre una mezcla y una sustancia?",
+            "5. ¿Puede una mezcla homogénea ser catalogada como mezcla pura? Justifique.",
+            "6. ¿Cuáles son los diferentes enlaces químicos que existen?",
+            "7. ¿Por qué algunos enlaces son más débiles que otros?",
+            "8. ¿Qué medidas conoce para representar: Masa, Longitud, Tiempo, Temperatura, Peso, Fuerza, Energía, Presión, Temperatura? ¿Cuáles corresponden al Sistema Internacional de Unidades?",
+            "9. Para los cálculos que involucran temperatura, ¿por qué es necesario utilizar la escala de Kelvin?",
+            "10. ¿Por qué es necesario realizar la conversión de unidades cuando se utilizan constantes?"
+        ],
+        des1a: [
+            "11. Defina los siguientes términos: a) Partícula α, b) Partícula β, c) Rayos ɣ y d) Rayos X.",
+            "12. Nombre los tipos de radiación que son emitidas por los elementos radioactivos."
+        ],
+        des1b: [
+            "13. ¿Qué se entiende por el término 'Partícula fundamental'?",
+            "14. Describe las contribuciones al entendimiento de la estructura atómica de los siguientes científicos: a) J.J. Thomson, b) R. Millikan, c) Ernest Rutherford, d) James Chadwick.",
+            "15. Describe la base experimental para creer que el núcleo ocupa solo una fracción muy pequeña del volumen atómico."
+        ],
+        des2: [
+            "16. ¿Qué es la tabla periódica y cuál es su importancia en el estudio de la química?",
+            "17. Menciona dos diferencias entre los metales y los no-metales.",
+            "18. Escribe los nombres y símbolos de cuatro elementos de cada una de las siguientes categorías: (a) no-metales, (b) metales y (c) metaloides.",
+            "19. Define con dos ejemplos los siguientes términos: (a) metales alcalinos, (b) metales alcalino-térreos, (c) halógenos y (d) gases nobles."
+        ],
+        des3: [
+            "20. De un ejemplo para cada uno de los siguientes términos: (a) materia, (b) sustancia y (c) mezcla.",
+            "21. De un ejemplo de una mezcla heterogénea y otro de una mezcla homogénea.",
+            "22. De un ejemplo de un elemento y de un compuesto. ¿En qué difieren los elementos y los compuestos? ¿Cuál es el número total de elementos conocidos?",
+            "23. A partir de cuál elemento los elementos comienzan a presentar radioactividad.",
+            "24. ¿Cuáles son las diferencias entre los tres principales estados de la materia?",
+            "25. ¿Cómo se llama el elemento 0 (cero) de la tabla periódica y por qué ya no se incluye?",
+            "26. Usando ejemplos, explique la diferencia entre una propiedad física y una propiedad química.",
+            "27. ¿Cómo difiere una propiedad intensiva de una extensiva? ¿Cuáles de las siguientes propiedades son extensivas y cuáles intensivas: (a) longitud, (b) volumen, (c) temperatura, (d) masa?"
+        ],
+        des4i: [
+            "28. ¿Qué es enlace iónico? Describa el rol de la energía de ionización y la afinidad electrónica en la formación de compuestos iónicos.",
+            "29. De un ejemplo de un compuesto iónico formado por (a) un metal alcalino y un halógeno, (b) un metal alcalino y el oxígeno, (c) un metal alcalino-térreo y un halógeno, (d) un metal alcalino-térreo y el oxígeno, (e) un grupo-13 y un grupo-16. Nombre cada compuesto y escriba su fórmula química.",
+            "30. De un ejemplo de un compuesto iónico formado entre dos no-metales. De un ejemplo de un compuesto con un ión poliatómico.",
+            "31. Explique por qué los iones con cargas mayores a 3 son raros. Explique por qué el NaCl sólido no es un conductor de electricidad, mientras que este sí lo es ya sea en estado fundido o disuelto en agua.",
+            "32. En el caso del BeCl<span class='sub'>2</span>, ¿cómo determinará si este compuesto es iónico o covalente?"
+        ],
+        des4c: [
+            "33. ¿Cuántos pares de electrones solitarios hay en los átomos subrayados de los siguientes compuestos? (a) HBr, (b) H<span class='sub'>2</span>S, (c) CH<span class='sub'>4</span>.",
+            "34. Compare los enlaces sencillos, dobles y triples en una molécula y dé un ejemplo de cada una. Para los mismos átomos enlazantes, cómo cambia la longitud del enlace desde el sencillo hasta el triple?",
+            "35. Compare las propiedades de los compuestos iónicos y covalentes."
+        ],
+        des4r: [
+            "36. Defina electronegatividad y explique la diferencia entre electronegatividad y afinidad electrónica.",
+            "37. Describa de forma general como la electronegatividad de los elementos cambian de acuerdo a su posición en la tabla periódica.",
+            "38. ¿Qué es un enlace covalente polar? Nombre dos compuesto que contengan uno o más enlaces covalentes polares.",
+            "39. Defina longitud de enlace, resonancia y estructura de resonancia. ¿Cuáles son las reglas para escribir dichas estructuras?",
+            "40. ¿Es posible 'atrapar' una estructura resonante de un compuesto para su estudio? Explique su respuesta."
+        ],
+        des5: [
+            "41. Nombre las unidades base del SI importantes para la química: (a) distancia, (b) volumen, (c) masa, (d) tiempo, (e) energía, (f) temperatura.",
+            "42. Escriba los números representados por los siguientes prefijos: (a) mega-, (b) kilo-, (c) deci-, (d) centi-, (e) mili-, (f) micro, (g) nano, (h) pico, (i) femto-.",
+            "43. ¿Cuáles unidades se utilizan normalmente para la densidad de sólidos y líquidos? ¿Y para la densidad de los gases? Explique las diferencias. Describa las tres escalas de temperatura utilizadas a lo largo del mundo: la escala Fahrenheit, la escala de Celsius y la escala de Kelvin. Diga por qué la escala de Kelvin se considera absoluta y por qué es necesario usar esta última en los cálculos que involucran temperatura."
+        ],
+        api1: [
+            "44. El diámetro de un átomo de Helio es aproximadamente 1 × 10<span class='sup'>2</span> pm. Suponga que se alinean átomos de Helio uno tras otro haciendo contacto entre ellos. ¿Aproximadamente cuántos átomos se necesitarían para hacer una línea de 1 cm?",
+            "45. El radio de un átomo es aproximadamente 10,000 veces más grande que su núcleo. Si un átomo fuera magnificado de tal forma que el radio de su núcleo fuera de 2 cm (aproximadamente el tamaño de una canica), ¿Cuál sería el radio atómico en millas? (1 mi = 1609 m)"
+        ],
+        api2: [
+            "46. Los elementos cuyo nombre termina en '-io' son usualmente metales; el sodio es un ejemplo. Identifique un no-metal cuyo nombre también termine en '-io'.",
+            "47. Describa los cambios en las propiedades (desde metales a no-metales, o desde no-metales a metales) conforme nos movemos: (a) hacia abajo en un grupo y (b) de izquierda a derecha en un mismo periodo.",
+            "48. Consulte la lectura adicional y encuentre (a) dos metales menos densos que el agua, (b) dos metales más densos que el mercurio, (c) el elemento metálico más denso conocido, y (d) el elemento no-metálico más denso conocido.",
+            "49. Agrupe los siguientes elementos en parejas donde usted esperaría que exhibieras propiedades químicas similares: K, F, P, Na, Cl y N."
+        ],
+        api3: [
+            "50. Clasifique cada una de las siguientes sustancias como elemento o compuesto: (a) hidrógeno, (b) agua, (c) oro, (d) azúcar, (e) acero.",
+            "51. Clasifique cada uno de los siguientes materiales como elemento, compuesto, mezcla homogénea o mezcla heterogénea: (a) agua de pozo, (b) gas Argón, (c) sacarosa, (d) una botella de vino tinto, (e) caldo de pollo, (f) sangre capilar y (g) ozono.",
+            "52. De los siguientes enunciados diga si se trata de una propiedad física o química: a) El gas oxígeno produce combustión, b) Los fertilizantes ayudan a incrementar la producción agrícola, c) El agua ebulle a menos de 100ºC en la cima de una montaña, d) El Pb es más denso que el Al, e) El U es un elemento radioactivo.",
+            "53. Lo siguiente describe un cambio físico o un cambio químico: a) El He dentro de un globo tiende a escapar luego de algunas horas, b) El haz de luz de una linterna lentamente empieza a atenuarse y finalmente desaparece, c) El jugo de fruta congelado se reconstituye luego de añadir agua, d) El crecimiento de las plantas depende de la energía del sol en un proceso llamado fotosíntesis, e) Una cucharada de sal se disuelve en un vaso de agua."
+        ],
+        api4: [
+            "54. Un enlace iónico está formado por un catión A<span class='sup'>+</span> y un anión B<span class='sup'>-</span>. ¿Cómo se vería afectada la energía del enlace iónico por los siguientes cambios? (a) Duplicando el radio de A<span class='sup'>+</span>, (b) triplicando la carga en A<span class='sup'>+</span>, (c) Duplicando las cargas en A<span class='sup'>+</span> y B<span class='sup'>-</span>, (d) Disminuyendo el radio de A<span class='sup'>+</span> y B<span class='sup'>-</span> a la mitad de su valor original.",
+            "55. Para cada uno de los siguientes pares de elementos, diga si los compuestos binarios que se formarán serán iónicos o covalentes. Escriba la fórmula empírica y el nombre del compuesto: (a) I y Cl, (b) Mg y F.",
+            "56. Para cada uno de los siguientes pares de elementos, diga si los compuestos binarios que se formarán serán iónicos o covalentes: (a) B y F, (b) K y Br.",
+            "57. Clasifique los siguientes enlaces como iónicos, covalente polar o covalente neutro y diga sus razones: (a) el enlace CC en el H<span class='sub'>3</span>CCH<span class='sub'>3</span>, (b) el enlace KI en el KI, (c) el enlace NB en H<span class='sub'>3</span>NBCl<span class='sub'>3</span> y (d) el enlace CF en CF<span class='sub'>4</span>.",
+            "58. Clasifique los siguientes enlaces como iónicos, covalente polar o covalente neutro y diga sus razones: (a) el enlace SiSi en el Cl<span class='sub'>3</span>SiSiCl<span class='sub'>3</span>, (b) el enlace SiCl en el Cl<span class='sub'>3</span>SiSiCl<span class='sub'>3</span>, (c) el enlace CaF en el CaF<span class='sub'>2</span>, (d) el enlace NH en el NH<span class='sub'>3</span>.",
+            "59. Liste los siguientes enlaces en orden ascendente con respecto a su carácter iónico: El enlace Litio a Flúor en el LiF, el enlace Potasio a Oxígeno en el K<span class='sub'>2</span>O, el enlace Nitrógeno a Nitrógeno en el N<span class='sub'>2</span>, el enlace Azufre a Oxígeno en el SO<span class='sub'>2</span> y el enlace Cloro a Flúor en el ClF<span class='sub'>3</span>.",
+            "60. Liste los siguientes enlaces en forma ascendente de acuerdo a su carácter iónico: Cesio y Flúor, Cloro y Cloro, Bromo y Cloro y Silicio y Carbono.",
+            "61. Dibuje 3 estructuras de resonancia para el ión clorato, ClO<span class='sub'>3</span><span class='sup'>-</span>. Muestre sus cargas formales.",
+            "62. Dibuje 3 estructuras de resonancia para el ácido hidrazoico, HN<span class='sub'>3</span>. El arreglo atómico es HNNN. Muestre sus cargas formales."
+        ],
+        api5: [
+            "63. El Bromo es un líquido café-rojizo. Calcule su densidad en g/mL si 586g de la sustancia ocupan un volumen de 188 mL.",
+            "64. Convierta las siguientes temperaturas a Kelvin: (a) 113 ºC, el punto de ebullición del azufre, (b) 37 ºC, la temperatura normal del cuerpo humano, (c) 357 ºC, el punto de ebullición del mercurio.",
+            "65. Convierte las siguientes unidades: (a) 226 m a decímetros, (b) 25.4 mg a kilogramos, (c) 556 mL a litros, (d) 10.6 kg/m<span class='sup'>3</span> a g/cm<span class='sup'>3</span>.",
+            "66. ¿Cuántos minutos le toma a la luz del sol llegar a la tierra? (La distancia entre el sol y la tierra o unidad astronómica es de 93 millones de millas y la velocidad de la luz se asume en 3.00 × 10<span class='sup'>8</span> m/s)",
+            "67. El Aluminio es un metal ligero (densidad de 2.70 g/cm<span class='sup'>3</span>) usado en la construcción aeroespacial, líneas de transmisión de alto voltaje, latas, y papeles. ¿Cuál es su densidad en kg/m<span class='sup'>3</span>?"
+        ],
+        evi: [
+            "68. <strong>Estructura Atómica y Enlace:</strong> Describe la estructura atómica del nitrógeno (N) y el oxígeno (O), incluyendo el número de protones, neutrones y electrones para sus isótopos más comunes (<span class='sup'>14</span>N y <span class='sup'>16</span>O).",
+            "69. ¿Cuál es la configuración electrónica del nitrógeno y el oxígeno en su estado fundamental?",
+            "70. Explica cómo se forma el enlace en la molécula de óxido nítrico (NO•). ¿Qué tipo de enlace químico es predominante? ¿Qué implicaciones tiene la presencia de un electrón desapareado (radical libre) en la reactividad de la molécula?",
+            "71. <strong>Clasificación Periódica:</strong> Ubica el nitrógeno, el oxígeno y el azufre (S) en la tabla periódica. ¿A qué grupo y periodo pertenecen? ¿Qué tienen en común los elementos del mismo grupo en términos de sus electrones de valencia?",
+            "72. <strong>Estados de Agregación:</strong> En condiciones fisiológicas (aprox. 37 °C y 1 atm), el óxido nítrico es un gas. Describe las características de este estado de agregación a nivel molecular. La hemoglobina es una proteína soluble en el plasma sanguíneo (un medio acuoso). ¿En qué estado de agregación se encuentra la hemoglobina y el agua del plasma?",
+            "73. <strong>Análisis de Enlace Químico - Paso 1:</strong> Identifica los reactivos en la formación de S-nitrosocisteína. Representa la estructura del óxido nítrico (N=O) y la cadena lateral de Cisteína (-CH<span class='sub'>2</span>-SH).",
+            "74. <strong>Paso 2:</strong> Razona el sitio de unión. ¿Cuál átomo del NO (N o O) y cuál átomo de la cisteína (S o H) son candidatos más probables para formar un nuevo enlace? Considera: a) El átomo de nitrógeno en NO• es más electropositivo que el oxígeno (el oxígeno es más electronegativo), b) El azufre de la cisteína es nucleofílico (rico en electrones) y puede donar un par de electrones, c) El hidrógeno del grupo -SH es mucho menos reactivo que el azufre. ¿Qué enlace se formará? ¿Cuántos pares solitarios están presentes en el azufre de la cisteína antes de la reacción?",
+            "75. <strong>Paso 3:</strong> Determina el tipo de enlace. Usando la tabla de electronegatividades (H: 2.20, C: 2.55, N: 3.04, O: 3.44, S: 2.58), calcula la diferencia de electronegatividad (ΔEN) entre los dos átomos que has identificado que forman el nuevo enlace (Azufre y Nitrógeno).",
+            "76. Basándote en el cálculo de ΔEN, determina si el enlace S-N es predominantemente iónico, covalente polar o covalente no polar. Explica tu razonamiento.",
+            "77. <strong>Conclusión:</strong> ¿Por qué este proceso se clasifica como una 'modificación covalente' en lugar de una interacción no covalente, como un puente de hidrógeno?",
+            "78. <strong>Unidades del SI y Medición:</strong> El flujo sanguíneo se mide en litros por minuto (L/min). Identifica las unidades básicas del SI involucradas en esta medida (volumen → longitud; tiempo). La masa de un suplemento de L-citrulina se mide típicamente en gramos (g). ¿Cuál es la unidad básica del SI para la masa y cuál es su equivalencia en gramos?"
+        ]
+    };
+
+    // Variable global para mantener el estado de la sidebar
+    let sidebarIsHidden = false;
+
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('mainContent');
+        const toggleBtn = document.getElementById('toggleBtn');
+        
+        sidebarIsHidden = !sidebarIsHidden;
+        
+        if (sidebarIsHidden) {
+            sidebar.classList.add('hidden');
+            mainContent.classList.add('expanded');
+            toggleBtn.classList.remove('shifted');
+            toggleBtn.innerHTML = '☰';
+        } else {
+            sidebar.classList.remove('hidden');
+            mainContent.classList.remove('expanded');
+            toggleBtn.classList.add('shifted');
+            toggleBtn.innerHTML = '✕';
+        }
+    }
+
+    function init() {
+        const sectionsMap = {
+            pre: 'q-pre', des1a: 'q-des1-a', des1b: 'q-des1-b', des2: 'q-des2',
+            des3: 'q-des3', des4i: 'q-des4-i', des4c: 'q-des4-c', des4r: 'q-des4-r',
+            des5: 'q-des5', api1: 'q-api-1', api2: 'q-api-2', api3: 'q-api-3',
+            api4: 'q-api-4', api5: 'q-api-5', evi: 'q-evi'
+        };
+
+        for (let sec in content) {
+            const container = document.getElementById(sectionsMap[sec]);
+            if (!container) continue;
+            content[sec].forEach((q, i) => {
+                container.innerHTML += `<div class="question-wrapper">
+                    <span class="question-label">${q}</span>
+                    <div class="answer-box" id="ans-${sec}-${i}" contenteditable="true" oninput="track()"></div>
+                </div>`;
+            });
+        }
+        
+        const rows = ["Composición", "Carga", "Masa relativa", "Masa (kg)", "Poder de penetración", "Poder ionizante", "Fuente", "Velocidad", "Deflección"];
+        const tbody = document.getElementById('table-atom');
+        rows.forEach((r, i) => {
+            tbody.innerHTML += `<tr><td>${r}</td>
+                <td contenteditable="true" id="t-${i}-1" oninput="track()"></td>
+                <td contenteditable="true" id="t-${i}-2" oninput="track()"></td>
+                <td contenteditable="true" id="t-${i}-3" oninput="track()"></td>
+                <td contenteditable="true" id="t-${i}-4" oninput="track()"></td>
+                <td contenteditable="true" id="t-${i}-5" oninput="track()"></td></tr>`;
+        });
+
+        // Configurar navegación sin afectar la sidebar
+        document.querySelectorAll('.nav-item').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const targetId = this.getAttribute('data-target');
+                
+                // Cambiar secciones
+                document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+                document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+                
+                const targetSec = document.getElementById(targetId);
+                if(targetSec) {
+                    targetSec.classList.add('active');
+                    this.classList.add('active');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+                
+                // No hacer nada con la sidebar - mantener el estado actual
+            });
+        });
+
+        load();
+    }
+
+    function track() {
+        const totalAct = 78; 
+        const boxesFilled = Array.from(document.querySelectorAll('.answer-box')).filter(el => el.innerText.trim().length > 0).length;
+        const tableCells = Array.from(document.querySelectorAll('td[contenteditable="true"]')).filter(el => el.innerText.trim().length > 0).length;
+        const count = Math.min(boxesFilled + (tableCells > 0 ? 1 : 0), totalAct);
+        document.getElementById('progress-fill').style.width = (count/totalAct)*100 + '%';
+        document.getElementById('count').innerText = count;
+    }
+
+    function save() {
+        const d = {};
+        document.querySelectorAll('[contenteditable="true"]').forEach(el => {
+            if(el.id) d[el.id] = el.innerHTML;
+        });
+        localStorage.setItem('guia_med_objeto1_final', JSON.stringify(d));
+        alert("¡Progreso guardado correctamente!");
+    }
+
+    function load() {
+        const s = localStorage.getItem('guia_med_objeto1_final');
+        if (s) {
+            const data = JSON.parse(s);
+            for (let id in data) { 
+                const el = document.getElementById(id); 
+                if(el) el.innerHTML = data[id]; 
+            }
+        }
+        track();
+    }
+
+    function reset() { 
+        if(confirm("¿Estás seguro de que deseas reiniciar toda la guía? Esta acción no se puede deshacer.")) { 
+            localStorage.removeItem('guia_med_objeto1_final'); 
+            location.reload(); 
+        } 
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+</script>
+
+</body>
+</html>
